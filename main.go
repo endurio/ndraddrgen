@@ -110,8 +110,11 @@ func generateKeyPair(filename string) error {
 		D:         key.D,
 	}
 
+	serializedPK := pub.SerializeCompressed()
+	hash := dcrutil.Hash160(serializedPK)
+
 	addr, err := dcrutil.NewAddressPubKeyHash(
-		dcrutil.Hash160(pub.SerializeCompressed()),
+		hash,
 		&params,
 		chainec.ECTypeSecp256k1)
 	if err != nil {
@@ -127,11 +130,27 @@ func generateKeyPair(filename string) error {
 	buf.WriteString("Address: ")
 	buf.WriteString(addr.EncodeAddress())
 	buf.WriteString(newLine)
+	buf.WriteString("Hash: ")
+	buf.WriteString(bytesToString(hash))
+	buf.WriteString(newLine)
+	buf.WriteString("Serialized PK Compressed: ")
+	buf.WriteString(bytesToString(serializedPK))
+	buf.WriteString(newLine)
 	buf.WriteString("Private key: ")
 	buf.WriteString(privWif.String())
 	buf.WriteString(newLine)
 
 	return writeNewFile(filename, buf.Bytes(), 0600)
+}
+
+func bytesToString(bytes []byte) (str string) {
+	for i, b := range bytes {
+		if i%8 == 0 {
+			str += newLine
+		}
+		str += fmt.Sprintf(" 0x%02X,", b)
+	}
+	return str
 }
 
 // deriveCoinTypeKey derives the cointype key which can be used to derive the
