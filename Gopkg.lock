@@ -3,27 +3,34 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:56991d6c6319c0de03d3e2f8cf56cafe81fa9779689ac78dd88d0bab6b145266"
   name = "github.com/agl/ed25519"
   packages = [
     ".",
-    "edwards25519"
+    "edwards25519",
   ]
+  pruneopts = ""
   revision = "5312a61534124124185d41f09206b9fef1d88403"
 
 [[projects]]
+  branch = "master"
+  digest = "1:73e8c7e9fcc5e303a712480e453232447ac49bc57d240de5731f789eb309658f"
   name = "github.com/dchest/blake256"
   packages = ["."]
+  pruneopts = ""
   revision = "dee3fe6eb0e98dc774a94fc231f85baf7c29d360"
-  version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/decred/base58"
-  packages = ["."]
-  revision = "56c501706f00d9e1cfacee19a27117e12da24734"
-  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:9949fe0d4cc9ff8b19287545444774420e5f6ba90da135e4eb5fe8e7edc348d4"
+  name = "github.com/decred/base58"
+  packages = ["."]
+  pruneopts = ""
+  revision = "56c501706f00d9e1cfacee19a27117e12da24734"
+
+[[projects]]
+  branch = "master"
+  digest = "1:da88cd051fe00fc5812b73cb9faa0e3aaf0411b898ef5ff99bcb2b5a71bc0201"
   name = "github.com/decred/dcrd"
   packages = [
     "chaincfg",
@@ -34,29 +41,41 @@
     "dcrec/secp256k1/schnorr",
     "dcrutil",
     "hdkeychain",
-    "wire"
+    "wire",
   ]
+  pruneopts = ""
   revision = "a235b830a8de4519d3e631ad5e8be06a709ef020"
 
 [[projects]]
   branch = "master"
+  digest = "1:d4e40f97f518854a2a3237733bb0f8e301968e01a6b3b1e6442d7adc01e6774c"
   name = "github.com/decred/dcrwallet"
   packages = [
     "errors",
     "pgpwordlist",
-    "walletseed"
+    "walletseed",
   ]
+  pruneopts = ""
   revision = "65504e99da301e230949c1a1e1aa170613128f38"
 
 [[projects]]
   branch = "master"
+  digest = "1:e7dc596c84a908dd326d2c07453307f192976c3edb9482b88290c42076fe378f"
   name = "golang.org/x/crypto"
   packages = ["ripemd160"]
+  pruneopts = ""
   revision = "8ac0e0d97ce45cd83d1d7243c060cb8461dda5e9"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c5779b96ef29fc9d65a5547618317fc4f6095559f673f73d72bc5288f20ee073"
+  input-imports = [
+    "github.com/decred/dcrd/chaincfg",
+    "github.com/decred/dcrd/chaincfg/chainec",
+    "github.com/decred/dcrd/dcrec/secp256k1",
+    "github.com/decred/dcrd/dcrutil",
+    "github.com/decred/dcrd/hdkeychain",
+    "github.com/decred/dcrwallet/walletseed",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

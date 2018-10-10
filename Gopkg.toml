@@ -2,7 +2,9 @@
 [[constraint]]
   branch = "master"
   name = "github.com/decred/dcrd"
+  source = "https://gitlab.com/Zergity/ndrd.git"
 
 [[constraint]]
   branch = "master"
   name = "github.com/decred/dcrwallet"
+  source = "https://gitlab.com/Zergity/ndrw.git"

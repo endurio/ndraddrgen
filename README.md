@@ -1,11 +1,11 @@
-dcraddrgen
+ndraddrgen
 ====
 
-[![Build Status](https://travis-ci.org/decred/dcraddrgen.png?branch=master)](https://travis-ci.org/decred/dcraddrgen)
-[![GoDoc](https://godoc.org/github.com/decred/dcraddrgen?status.png)](http://godoc.org/github.com/decred/dcraddrgen)
+[![Build Status](https://travis-ci.org/endurio/ndraddrgen.png?branch=master)](https://travis-ci.org/endurio/ndraddrgen)
+[![GoDoc](https://godoc.org/gitlab.com/endurio/ndraddrgen?status.png)](http://godoc.org/gitlab.com/endurio/ndraddrgen)
 
 
-dcraddrgen is a simple offline address generator for [decred](https://decred.org/).
+ndraddrgen is a simple offline address generator for [endurio](https://endurio.org/).
 
 It allows one to generate an address (along with either the private
 key or a wallet seed) without a running wallet or daemon.
@@ -40,8 +40,8 @@ For a first time installation, the project and dependency sources can be
 obtained manually with `git` and `dep` (create directories as needed):
 
 ```
-git clone https://github.com/decred/dcraddrgen $GOPATH/src/github.com/decred/dcraddrgen
-cd $GOPATH/src/github.com/decred/dcraddrgen
+git clone https://gitlab.com/endurio/ndraddrgen $GOPATH/src/gitlab.com/endurio/ndraddrgen
+cd $GOPATH/src/gitlab.com/endurio/ndraddrgen
 dep ensure
 ```
 
@@ -49,7 +49,7 @@ To update an existing source tree, pull the latest changes and install the
 matching dependencies:
 
 ```
-cd $GOPATH/src/github.com/decred/dcraddrgen
+cd $GOPATH/src/gitlab.com/endurio/ndraddrgen
 git pull
 dep ensure
 ```
@@ -57,16 +57,16 @@ dep ensure
 **Building/Installing**:
 
 The `go` tool is used to build or install (to `GOPATH`) the project.  Some
-example build instructions are provided below (all must run from the `dcraddrgen`
+example build instructions are provided below (all must run from the `ndraddrgen`
 project directory).
 
-To build a `dcraddrgen` executable and install it to `$GOPATH/bin/`:
+To build a `ndraddrgen` executable and install it to `$GOPATH/bin/`:
 
 ```
 go install
 ```
 
-To build a `dcraddrgen` executable and place it in the current directory:
+To build a `ndraddrgen` executable and place it in the current directory:
 
 ```
 go build
@@ -75,8 +75,8 @@ go build
 ## Usage
 
 ```
-Usage: dcraddrgen [-testnet] [-simnet] [-regtest] [-noseed] [-h] filename
-Generate a Decred private and public key or wallet seed.
+Usage: ndraddrgen [-testnet] [-simnet] [-regtest] [-noseed] [-h] filename
+Generate a endurio private and public key or wallet seed.
 These are output to the file 'filename'.
 
   -h 		    Print this message

@@ -1,3 +1,3 @@
 @echo off
-dcraddrgen -verify
+ndraddrgen -verify
 pause
