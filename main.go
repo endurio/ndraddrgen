@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -16,11 +17,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainec"
-	"github.com/decred/dcrd/dcrec/secp256k1"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/hdkeychain"
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/decred/dcrwallet/walletseed"
 )
 
@@ -54,7 +54,7 @@ const ExternalBranch uint32 = 0
 // branch.
 const InternalBranch uint32 = 1
 
-var curve = secp256k1.S256()
+var curve = btcec.S256()
 
 var params = chaincfg.MainNetParams
 
@@ -76,12 +76,12 @@ var newLine = "\n"
 // writeNewFile writes data to a file named by filename.
 // Error is returned if the file does exist. Otherwise writeNewFile creates the file with permissions perm;
 // Based on ioutil.WriteFile, but produces an err if the file exists.
-func writeNewFile(filename string, data []byte, perm os.FileMode) error {
+func writeNewFile(filename string, data string, perm os.FileMode) error {
 	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_EXCL, perm)
 	if err != nil {
 		return err
 	}
-	n, err := f.Write(data)
+	n, err := f.WriteString(data)
 	if err == nil && n < len(data) {
 		// There was no error, but not all the data was written, so report an error.
 		err = io.ErrShortWrite
@@ -95,60 +95,37 @@ func writeNewFile(filename string, data []byte, perm os.FileMode) error {
 }
 
 // generateKeyPair generates and stores a secp256k1 keypair in a file.
-func generateKeyPair(filename string) error {
+func generateKeyPair() (string, error) {
 	key, err := ecdsa.GenerateKey(curve, rand.Reader)
 	if err != nil {
-		return err
+		return "", err
 	}
-	pub := secp256k1.PublicKey{
+	pub := btcec.PublicKey{
 		Curve: curve,
 		X:     key.PublicKey.X,
 		Y:     key.PublicKey.Y,
 	}
-	priv := secp256k1.PrivateKey{
+	priv := btcec.PrivateKey{
 		PublicKey: key.PublicKey,
 		D:         key.D,
 	}
 
-	serializedPK := pub.SerializeCompressed()
-	hash := dcrutil.Hash160(serializedPK)
-
-	addr, err := dcrutil.NewAddressPubKeyHash(
-		hash,
-		&params,
-		chainec.ECTypeSecp256k1)
-	if err != nil {
-		return err
-	}
-
-	privWif, err := dcrutil.NewWIF(priv, &params, chainec.ECTypeSecp256k1)
-	if err != nil {
-		return err
-	}
-
 	var buf bytes.Buffer
-	buf.WriteString("Address: ")
-	buf.WriteString(addr.EncodeAddress())
-	buf.WriteString(newLine)
-	buf.WriteString("Hash: ")
-	buf.WriteString(bytesToString(hash))
-	buf.WriteString(newLine)
-	buf.WriteString("Serialized PK Compressed: ")
-	buf.WriteString(bytesToString(serializedPK))
-	buf.WriteString(newLine)
-	buf.WriteString("Serialized PK Unompressed (unused): ")
-	buf.WriteString(bytesToString(pub.SerializeUncompressed()))
+
+	writeKeyData(&buf, &priv, &pub, false)
+	writeKeyData(&buf, &priv, &pub, true)
+
+	privWif, err := btcutil.NewWIF(&priv, &params, true)
+	if err != nil {
+		return "", err
+	}
+
 	buf.WriteString(newLine)
 	buf.WriteString("Private key: ")
 	buf.WriteString(privWif.String())
 	buf.WriteString(newLine)
 
-	if len(filename) == 0 {
-		_, err := fmt.Print(buf.String())
-		return err
-	}
-
-	return writeNewFile(filename, buf.Bytes(), 0600)
+	return buf.String(), nil
 }
 
 func bytesToString(bytes []byte) (str string) {
@@ -159,6 +136,52 @@ func bytesToString(bytes []byte) (str string) {
 		str += fmt.Sprintf(" 0x%02X,", b)
 	}
 	return str
+}
+
+func writeKeyData(buf *bytes.Buffer, priv *btcec.PrivateKey, pub *btcec.PublicKey, compressed bool) error {
+	var serializedPK []byte
+	if compressed {
+		buf.WriteString(newLine)
+		buf.WriteString("[COMPRESSED]")
+		serializedPK = pub.SerializeCompressed()
+	} else {
+		buf.WriteString("[UNCOMPRESSED]")
+		serializedPK = pub.SerializeUncompressed()
+	}
+
+	hash := btcutil.Hash160(serializedPK)
+
+	addr, err := btcutil.NewAddressPubKeyHash(hash, &params)
+	if err != nil {
+		return err
+	}
+
+	signature, err := btcec.SignCompact(btcec.S256(), priv, hash, false)
+	if err != nil {
+		return err
+	}
+
+	pk, _, err := btcec.RecoverCompact(btcec.S256(), signature, hash)
+	if err != nil {
+		return err
+	}
+
+	if !pk.IsEqual(pub) {
+		return errors.New("Sum Ting Wong")
+	}
+
+	buf.WriteString(newLine)
+	buf.WriteString("Address: ")
+	buf.WriteString(addr.EncodeAddress())
+	buf.WriteString(newLine)
+	buf.WriteString("Hash:")
+	buf.WriteString(bytesToString(hash))
+	buf.WriteString(newLine)
+	buf.WriteString("Serialized PK:")
+	buf.WriteString(bytesToString(serializedPK))
+	buf.WriteString(newLine)
+
+	return nil
 }
 
 // deriveCoinTypeKey derives the cointype key which can be used to derive the
@@ -362,7 +385,7 @@ func generateSeed(filename string) error {
 	// Zero the seed array.
 	copy(seed[:], bytes.Repeat([]byte{0x00}, 32))
 
-	return writeNewFile(filename, buf.Bytes(), 0600)
+	return writeNewFile(filename, buf.String(), 0600)
 }
 
 // promptSeed is used to prompt for the wallet seed which maybe required during
@@ -493,7 +516,7 @@ func main() {
 	helpMessage := func() {
 		fmt.Println(
 			"Usage: dcraddrgen [-testnet] [-simnet] [-noseed] [-verify] [-h] filename")
-		fmt.Println("Generate a Decred private and public key or wallet seed. \n" +
+		fmt.Println("Generate a Endurio private and public key or wallet seed. \n" +
 			"These are output to the file 'filename'.\n")
 		fmt.Println("  -h \t\tPrint this message")
 		fmt.Println("  -testnet \tGenerate a testnet key instead of mainnet")
@@ -527,7 +550,7 @@ func main() {
 			fmt.Println("Error: Only specify one network.")
 			return
 		}
-		params = chaincfg.TestNet2Params
+		params = chaincfg.TestNet3Params
 	}
 	if *simnet {
 		params = chaincfg.SimNetParams
@@ -535,16 +558,15 @@ func main() {
 
 	// Single keypair generation.
 	if *noseed {
-		err := generateKeyPair(fn)
+		str, err := generateKeyPair()
 		if err != nil {
 			fmt.Printf("Error generating key pair: %v\n", err.Error())
 			return
 		}
 		if len(fn) > 0 {
-			fmt.Printf("Successfully generated keypair and stored it in %v.\n",
-				fn)
-			fmt.Printf("Your private key is used to spend your funds. Do not " +
-				"reveal it to anyone.\n")
+			writeNewFile(fn, str, 0600)
+		} else {
+			fmt.Print(str)
 		}
 		return
 	}

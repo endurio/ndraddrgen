@@ -14,6 +14,33 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:4eab03da1b6c2908e1708fe22c9d5060f4f304043008492497b9277ba3eb86af"
+  name = "github.com/btcsuite/btcd"
+  packages = [
+    "btcec",
+    "chaincfg",
+    "chaincfg/chainhash",
+    "wire",
+  ]
+  pruneopts = ""
+  revision = "e50510fd1be2b9f289587203bfb27fedc1815f80"
+  source = "https://gitlab.com/Zergity/ndrd.git"
+
+[[projects]]
+  branch = "master"
+  digest = "1:e250643be8120824556f39df6ef128fc2be490fc96e0cb64b1a8ecf96bbe3ce6"
+  name = "github.com/btcsuite/btcutil"
+  packages = [
+    ".",
+    "base58",
+    "bech32",
+    "hdkeychain",
+  ]
+  pruneopts = ""
+  revision = "ab6388e0c60ae4834a1f57511e20c17b5f78be4b"
+
+[[projects]]
+  branch = "master"
   digest = "1:73e8c7e9fcc5e303a712480e453232447ac49bc57d240de5731f789eb309658f"
   name = "github.com/dchest/blake256"
   packages = ["."]
@@ -29,8 +56,7 @@
   revision = "56c501706f00d9e1cfacee19a27117e12da24734"
 
 [[projects]]
-  branch = "master"
-  digest = "1:da88cd051fe00fc5812b73cb9faa0e3aaf0411b898ef5ff99bcb2b5a71bc0201"
+  digest = "1:db58002090ce04b78b1da2f5efc45775f8fe0088c83491e41fa6a16507ef53d0"
   name = "github.com/decred/dcrd"
   packages = [
     "chaincfg",
@@ -44,11 +70,12 @@
     "wire",
   ]
   pruneopts = ""
-  revision = "a235b830a8de4519d3e631ad5e8be06a709ef020"
+  revision = "fd99f572cfd52ca722ad501ccb34acdcb22b4a67"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:d4e40f97f518854a2a3237733bb0f8e301968e01a6b3b1e6442d7adc01e6774c"
+  digest = "1:8559fa6522c210b5c40ad8001ac529022e720eb8635dcc05fb604d86727e8f59"
   name = "github.com/decred/dcrwallet"
   packages = [
     "errors",
@@ -56,25 +83,24 @@
     "walletseed",
   ]
   pruneopts = ""
-  revision = "65504e99da301e230949c1a1e1aa170613128f38"
+  revision = "566c13d1f06c79239597af8be4517ba6ef88c52b"
 
 [[projects]]
   branch = "master"
-  digest = "1:e7dc596c84a908dd326d2c07453307f192976c3edb9482b88290c42076fe378f"
+  digest = "1:6114feded9bd35a4dc08d3abf700d6c6fa2e05754b45d696a16487186402384a"
   name = "golang.org/x/crypto"
   packages = ["ripemd160"]
   pruneopts = ""
-  revision = "8ac0e0d97ce45cd83d1d7243c060cb8461dda5e9"
+  revision = "7c1a557ab941a71c619514f229f0b27ccb0c27cf"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/decred/dcrd/chaincfg",
-    "github.com/decred/dcrd/chaincfg/chainec",
-    "github.com/decred/dcrd/dcrec/secp256k1",
-    "github.com/decred/dcrd/dcrutil",
-    "github.com/decred/dcrd/hdkeychain",
+    "github.com/btcsuite/btcd/btcec",
+    "github.com/btcsuite/btcd/chaincfg",
+    "github.com/btcsuite/btcutil",
+    "github.com/btcsuite/btcutil/hdkeychain",
     "github.com/decred/dcrwallet/walletseed",
   ]
   solver-name = "gps-cdcl"
