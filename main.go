@@ -66,6 +66,7 @@ var noseed = flag.Bool("noseed", false, "Generate a single keypair instead of "+
 	"an HD extended seed")
 var verify = flag.Bool("verify", false, "Verify a seed by generating the first "+
 	"address")
+var generate = flag.Bool("generate", false, "Generate new key")
 
 func setupFlags(msg func(), f *flag.FlagSet) {
 	f.Usage = msg
@@ -95,27 +96,36 @@ func writeNewFile(filename string, data string, perm os.FileMode) error {
 }
 
 // generateKeyPair generates and stores a secp256k1 keypair in a file.
-func generateKeyPair() (string, error) {
-	key, err := ecdsa.GenerateKey(curve, rand.Reader)
-	if err != nil {
-		return "", err
+func generateKeyPair(generate bool) (string, error) {
+	var priv *btcec.PrivateKey
+	if generate {
+		key, err := ecdsa.GenerateKey(curve, rand.Reader)
+		if err != nil {
+			return "", err
+		}
+		priv = &btcec.PrivateKey{
+			PublicKey: key.PublicKey,
+			D:         key.D,
+		}
+	} else {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter Private Key: ")
+		prvKey, _ := reader.ReadString('\n')
+		prvKey = strings.TrimSpace(prvKey)
+		privWif, err := btcutil.DecodeWIF(prvKey)
+		if err != nil {
+			return "", err
+		}
+		priv = privWif.PrivKey
 	}
-	pub := btcec.PublicKey{
-		Curve: curve,
-		X:     key.PublicKey.X,
-		Y:     key.PublicKey.Y,
-	}
-	priv := btcec.PrivateKey{
-		PublicKey: key.PublicKey,
-		D:         key.D,
-	}
+	pub := priv.PubKey()
 
 	var buf bytes.Buffer
 
-	writeKeyData(&buf, &priv, &pub, false)
-	writeKeyData(&buf, &priv, &pub, true)
+	writeKeyData(&buf, priv, pub, false)
+	writeKeyData(&buf, priv, pub, true)
 
-	privWif, err := btcutil.NewWIF(&priv, &params, true)
+	privWif, err := btcutil.NewWIF(priv, &params, true)
 	if err != nil {
 		return "", err
 	}
@@ -156,12 +166,12 @@ func writeKeyData(buf *bytes.Buffer, priv *btcec.PrivateKey, pub *btcec.PublicKe
 		return err
 	}
 
-	signature, err := btcec.SignCompact(btcec.S256(), priv, hash, false)
+	signature, err := btcec.SignCompact(curve, priv, hash, false)
 	if err != nil {
 		return err
 	}
 
-	pk, _, err := btcec.RecoverCompact(btcec.S256(), signature, hash)
+	pk, _, err := btcec.RecoverCompact(curve, signature, hash)
 	if err != nil {
 		return err
 	}
@@ -558,7 +568,7 @@ func main() {
 
 	// Single keypair generation.
 	if *noseed {
-		str, err := generateKeyPair()
+		str, err := generateKeyPair(*generate)
 		if err != nil {
 			fmt.Printf("Error generating key pair: %v\n", err.Error())
 			return
