@@ -136,9 +136,17 @@ func generateKeyPair(filename string) error {
 	buf.WriteString("Serialized PK Compressed: ")
 	buf.WriteString(bytesToString(serializedPK))
 	buf.WriteString(newLine)
+	buf.WriteString("Serialized PK Unompressed (unused): ")
+	buf.WriteString(bytesToString(pub.SerializeUncompressed()))
+	buf.WriteString(newLine)
 	buf.WriteString("Private key: ")
 	buf.WriteString(privWif.String())
 	buf.WriteString(newLine)
+
+	if len(filename) == 0 {
+		_, err := fmt.Print(buf.String())
+		return err
+	}
 
 	return writeNewFile(filename, buf.Bytes(), 0600)
 }
@@ -511,12 +519,7 @@ func main() {
 		return
 	}
 
-	var fn string
-	if flag.Arg(0) != "" {
-		fn = flag.Arg(0)
-	} else {
-		fn = "keys.txt"
-	}
+	fn := flag.Arg(0)
 
 	// Alter the globals to specified network.
 	if *testnet {
@@ -537,10 +540,12 @@ func main() {
 			fmt.Printf("Error generating key pair: %v\n", err.Error())
 			return
 		}
-		fmt.Printf("Successfully generated keypair and stored it in %v.\n",
-			fn)
-		fmt.Printf("Your private key is used to spend your funds. Do not " +
-			"reveal it to anyone.\n")
+		if len(fn) > 0 {
+			fmt.Printf("Successfully generated keypair and stored it in %v.\n",
+				fn)
+			fmt.Printf("Your private key is used to spend your funds. Do not " +
+				"reveal it to anyone.\n")
+		}
 		return
 	}
 
