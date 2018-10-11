@@ -106,7 +106,7 @@ func writeNewFile(filename string, data string, perm os.FileMode) error {
 
 func bruteForce() {
 	for i := 0; i < 0x100; i++ {
-		params.PrivateKeyID = byte(i)
+		params.PubKeyHashAddrID = byte(i)
 
 		fmt.Printf("%02X: ", i)
 
@@ -116,8 +116,13 @@ func bruteForce() {
 				PublicKey: key.PublicKey,
 				D:         key.D,
 			}
-			privWif, _ := btcutil.NewWIF(priv, &params, true)
-			fmt.Printf("%v ", privWif.String()[:2])
+			pub := priv.PubKey()
+			serializedPK := pub.SerializeCompressed()
+			hash := btcutil.Hash160(serializedPK)
+
+			addr, _ := btcutil.NewAddressPubKeyHash(hash, &params)
+
+			fmt.Printf("%v ", addr.EncodeAddress()[:2])
 		}
 		fmt.Println()
 	}
