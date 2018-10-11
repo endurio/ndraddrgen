@@ -124,16 +124,6 @@ func generateKeyPair(generate bool) (string, error) {
 	writeKeyData(&buf, priv, pub, false)
 	writeKeyData(&buf, priv, pub, true)
 
-	privWif, err := btcutil.NewWIF(priv, &params, true)
-	if err != nil {
-		return "", err
-	}
-
-	buf.WriteString(newLine)
-	buf.WriteString("Private key: ")
-	buf.WriteString(privWif.String())
-	buf.WriteString(newLine)
-
 	return buf.String(), nil
 }
 
@@ -188,6 +178,15 @@ func writeKeyData(buf *bytes.Buffer, priv *btcec.PrivateKey, pub *btcec.PublicKe
 	buf.WriteString(newLine)
 	buf.WriteString("Serialized PK:")
 	buf.WriteString(bytesToString(serializedPK))
+	buf.WriteString(newLine)
+
+	privWif, err := btcutil.NewWIF(priv, &params, compressed)
+	if err != nil {
+		return err
+	}
+
+	buf.WriteString("Private key: ")
+	buf.WriteString(privWif.String())
 	buf.WriteString(newLine)
 
 	return nil
