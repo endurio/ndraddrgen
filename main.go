@@ -62,11 +62,10 @@ var params = chaincfg.MainNetParams
 var getHelp = flag.Bool("h", false, "Print help message")
 var testnet = flag.Bool("testnet", false, "")
 var simnet = flag.Bool("simnet", false, "")
-var noseed = flag.Bool("noseed", false, "Generate a single keypair instead of "+
-	"an HD extended seed")
+var seed = flag.Bool("seed", false, "Generate an HD extended seed instead of a single keypair")
 var verify = flag.Bool("verify", false, "Verify a seed by generating the first "+
 	"address")
-var generate = flag.Bool("generate", false, "Generate new key")
+var key = flag.Bool("key", false, "Import private key")
 
 func setupFlags(msg func(), f *flag.FlagSet) {
 	f.Usage = msg
@@ -531,8 +530,9 @@ func main() {
 		fmt.Println("  -h \t\tPrint this message")
 		fmt.Println("  -testnet \tGenerate a testnet key instead of mainnet")
 		fmt.Println("  -simnet \tGenerate a simnet key instead of mainnet")
-		fmt.Println("  -noseed \tGenerate a single keypair instead of a seed")
+		fmt.Println("  -seed \tGenerate a seed instead of a single keypair")
 		fmt.Println("  -verify \tVerify a seed by generating the first address")
+		fmt.Println("  -key \tImport a private key")
 	}
 
 	setupFlags(helpMessage, flag.CommandLine)
@@ -567,8 +567,8 @@ func main() {
 	}
 
 	// Single keypair generation.
-	if *noseed {
-		str, err := generateKeyPair(*generate)
+	if !*seed {
+		str, err := generateKeyPair(!*key)
 		if err != nil {
 			fmt.Printf("Error generating key pair: %v\n", err.Error())
 			return
