@@ -266,23 +266,23 @@ func checkBranchKeys(acctKey *hdkeychain.ExtendedKey) error {
 
 // generateSeed derives an address from an HDKeychain for use in wallet. It
 // outputs the seed, address, and extended public key to the file specified.
-func generateSeed(filename string) error {
+func generateSeed() (string, error) {
 	seed, err := hdkeychain.GenerateSeed(hdkeychain.RecommendedSeedLen)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Derive the master extended key from the seed.
 	root, err := hdkeychain.NewMaster(seed, &params)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer root.Zero()
 
 	// Derive the cointype key according to BIP0044.
 	coinTypeKeyPriv, err := deriveCoinTypeKey(root, params.HDCoinType)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer coinTypeKeyPriv.Zero()
 
@@ -292,10 +292,10 @@ func generateSeed(filename string) error {
 		// The seed is unusable if the any of the children in the
 		// required hierarchy can't be derived due to invalid child.
 		if err == hdkeychain.ErrInvalidChild {
-			return fmt.Errorf("the provided seed is unusable")
+			return "", fmt.Errorf("the provided seed is unusable")
 		}
 
-		return err
+		return "", err
 	}
 
 	// Ensure the branch keys can be derived for the provided seed according
@@ -304,16 +304,16 @@ func generateSeed(filename string) error {
 		// The seed is unusable if the any of the children in the
 		// required hierarchy can't be derived due to invalid child.
 		if err == hdkeychain.ErrInvalidChild {
-			return fmt.Errorf("the provided seed is unusable")
+			return "", fmt.Errorf("the provided seed is unusable")
 		}
 
-		return err
+		return "", err
 	}
 
 	// The address manager needs the public extended key for the account.
 	acctKeyPub, err := acctKeyPriv.Neuter()
 	if err != nil {
-		return fmt.Errorf("failed to convert private key for account 0")
+		return "", fmt.Errorf("failed to convert private key for account 0")
 	}
 
 	index := uint32(0)  // First address
@@ -327,23 +327,22 @@ func generateSeed(filename string) error {
 	// Derive the appropriate branch key and ensure it is zeroed when done.
 	branchKey, err := acctKey.Child(branch)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer branchKey.Zero() // Ensure branch key is zeroed when done.
 
 	key, err := branchKey.Child(index)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer key.Zero()
 
 	addr, err := key.Address(&params)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Require the user to write down the seed.
-	reader := bufio.NewReader(os.Stdin)
 	seedStr := walletseed.EncodeMnemonic(seed)
 	seedStrSplit := strings.Split(seedStr, " ")
 	fmt.Println("WRITE DOWN THE SEED GIVEN BELOW. YOU WILL NOT BE GIVEN " +
@@ -358,29 +357,12 @@ func generateSeed(filename string) error {
 	}
 
 	fmt.Printf("\n\nHex: %x\n", seed)
-	fmt.Println("IMPORTANT: Keep the seed in a safe place as you\n" +
+	fmt.Println("\nIMPORTANT: Keep the seed in a safe place as you\n" +
 		"will NOT be able to restore your wallet without it.")
 	fmt.Println("Please keep in mind that anyone who has access\n" +
 		"to the seed can also restore your wallet thereby\n" +
 		"giving them access to all your funds, so it is\n" +
 		"imperative that you keep it in a secure location.\n")
-
-	for {
-		fmt.Print("Once you have stored the seed in a safe \n" +
-			"and secure location, enter OK here to erase the \n" +
-			"seed and all derived keys from memory. Derived \n" +
-			"public keys and an address will be stored in the \n" +
-			"file specified (default: keys.txt): ")
-		confirmSeed, err := reader.ReadString('\n')
-		if err != nil {
-			return err
-		}
-		confirmSeed = strings.TrimSpace(confirmSeed)
-		confirmSeed = strings.Trim(confirmSeed, `"`)
-		if confirmSeed == "OK" {
-			break
-		}
-	}
 
 	var buf bytes.Buffer
 	buf.WriteString("First address: ")
@@ -393,7 +375,7 @@ func generateSeed(filename string) error {
 	// Zero the seed array.
 	copy(seed[:], bytes.Repeat([]byte{0x00}, 32))
 
-	return writeNewFile(filename, buf.String(), 0600)
+	return buf.String(), nil
 }
 
 // promptSeed is used to prompt for the wallet seed which maybe required during
@@ -581,13 +563,14 @@ func main() {
 	}
 
 	// Derivation of an address from an HDKeychain for use in wallet.
-	err := generateSeed(fn)
+	str, err := generateSeed()
 	if err != nil {
 		fmt.Printf("Error generating seed: %v\n", err.Error())
 		return
 	}
-	fmt.Printf("\nSuccessfully generated an extended public \n"+
-		"key and address and stored them in %v.\n", fn)
-	fmt.Printf("\nYour extended public key can be used to " +
-		"derive all your addresses. Keep it private.\n")
+	if len(fn) > 0 {
+		writeNewFile(fn, str, 0600)
+	} else {
+		fmt.Print(str)
+	}
 }
