@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -68,6 +69,14 @@ var verify = flag.Bool("verify", false, "Verify a seed by generating the first "
 	"address")
 var generate = flag.Bool("generate", false, "Generate new key")
 
+var bf = flag.Bool("bf", false, "Brute force them")
+
+var prvKeyID = flag.String("prvkeyid", "", "Set the Private Key ID")
+var pkhID = flag.String("pkhid", "", "Set the Public Key Hash Address ID")
+var shID = flag.String("shid", "", "Set the Script Hash Address ID")
+var wpkhID = flag.String("wpkhid", "", "Set the Witness Public Key Hash Address ID")
+var wshID = flag.String("wshid", "", "Set the Witness Script Hash Address ID")
+
 func setupFlags(msg func(), f *flag.FlagSet) {
 	f.Usage = msg
 }
@@ -93,6 +102,25 @@ func writeNewFile(filename string, data string, perm os.FileMode) error {
 		return err
 	}
 	return f.Close()
+}
+
+func bruteForce() {
+	for i := 0; i < 0x100; i++ {
+		params.PrivateKeyID = byte(i)
+
+		fmt.Printf("%02X: ", i)
+
+		for j := 0; j < 40; j++ {
+			key, _ := ecdsa.GenerateKey(curve, rand.Reader)
+			priv := &btcec.PrivateKey{
+				PublicKey: key.PublicKey,
+				D:         key.D,
+			}
+			privWif, _ := btcutil.NewWIF(priv, &params, true)
+			fmt.Printf("%v ", privWif.String()[:2])
+		}
+		fmt.Println()
+	}
 }
 
 // generateKeyPair generates and stores a secp256k1 keypair in a file.
@@ -124,16 +152,6 @@ func generateKeyPair(generate bool) (string, error) {
 
 	writeKeyData(&buf, priv, pub, false)
 	writeKeyData(&buf, priv, pub, true)
-
-	privWif, err := btcutil.NewWIF(priv, &params, true)
-	if err != nil {
-		return "", err
-	}
-
-	buf.WriteString(newLine)
-	buf.WriteString("Private key: ")
-	buf.WriteString(privWif.String())
-	buf.WriteString(newLine)
 
 	return buf.String(), nil
 }
@@ -180,6 +198,11 @@ func writeKeyData(buf *bytes.Buffer, priv *btcec.PrivateKey, pub *btcec.PublicKe
 		return errors.New("Sum Ting Wong")
 	}
 
+	privWif, err := btcutil.NewWIF(priv, &params, compressed)
+	if err != nil {
+		return err
+	}
+
 	buf.WriteString(newLine)
 	buf.WriteString("Address: ")
 	buf.WriteString(addr.EncodeAddress())
@@ -189,6 +212,11 @@ func writeKeyData(buf *bytes.Buffer, priv *btcec.PrivateKey, pub *btcec.PublicKe
 	buf.WriteString(newLine)
 	buf.WriteString("Serialized PK:")
 	buf.WriteString(bytesToString(serializedPK))
+	buf.WriteString(newLine)
+
+	buf.WriteString(newLine)
+	buf.WriteString("Private key: ")
+	buf.WriteString(privWif.String())
 	buf.WriteString(newLine)
 
 	return nil
@@ -566,6 +594,20 @@ func main() {
 		params = chaincfg.SimNetParams
 	}
 
+	if len(*prvKeyID) > 0 {
+		var base = 10
+		if strings.HasPrefix(*prvKeyID, "0x") {
+			base = 16
+			*prvKeyID = (*prvKeyID)[2:]
+		}
+		value, err := strconv.ParseUint(*prvKeyID, base, 8)
+		if err != nil {
+			fmt.Printf("Error parsibng prvkeyid: %v\n", err.Error())
+			return
+		}
+		params.PrivateKeyID = byte(value)
+	}
+
 	// Single keypair generation.
 	if *noseed {
 		str, err := generateKeyPair(*generate)
@@ -578,6 +620,11 @@ func main() {
 		} else {
 			fmt.Print(str)
 		}
+		return
+	}
+
+	if *bf {
+		bruteForce()
 		return
 	}
 
