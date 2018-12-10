@@ -67,6 +67,7 @@ var verify = flag.Bool("verify", false, "Verify a seed by generating the first "
 	"address")
 var key = flag.Bool("key", false, "Import private key")
 var verbose = flag.Bool("v", false, "Print dev data")
+var uncompressed = flag.Bool("u", false, "Print uncompressed keys instead")
 
 func setupFlags(msg func(), f *flag.FlagSet) {
 	f.Usage = msg
@@ -96,7 +97,7 @@ func writeNewFile(filename string, data string, perm os.FileMode) error {
 }
 
 // generateKeyPair generates and stores a secp256k1 keypair in a file.
-func generateKeyPair(generate bool, verbose bool) (string, error) {
+func generateKeyPair(generate, verbose, uncompressed bool) (string, error) {
 	var priv *btcec.PrivateKey
 	if generate {
 		key, err := ecdsa.GenerateKey(curve, rand.Reader)
@@ -122,8 +123,7 @@ func generateKeyPair(generate bool, verbose bool) (string, error) {
 
 	var buf bytes.Buffer
 
-	writeKeyData(&buf, priv, pub, false, verbose)
-	writeKeyData(&buf, priv, pub, true, verbose)
+	writeKeyData(&buf, priv, pub, !uncompressed, verbose)
 
 	return buf.String(), nil
 }
@@ -518,6 +518,7 @@ func main() {
 		fmt.Println("  -verify \tVerify a seed by generating the first address")
 		fmt.Println("  -key \tImport a private key")
 		fmt.Println("  -v \tPrint dev data")
+		fmt.Println("  -u \tPrint uncompressed keys instead")
 	}
 
 	setupFlags(helpMessage, flag.CommandLine)
@@ -553,7 +554,7 @@ func main() {
 
 	// Single keypair generation.
 	if !*seed {
-		str, err := generateKeyPair(!*key, *verbose)
+		str, err := generateKeyPair(!*key, *verbose, *uncompressed)
 		if err != nil {
 			fmt.Printf("Error generating key pair: %v\n", err.Error())
 			return
