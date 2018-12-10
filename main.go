@@ -66,6 +66,7 @@ var seed = flag.Bool("seed", false, "Generate an HD extended seed instead of a s
 var verify = flag.Bool("verify", false, "Verify a seed by generating the first "+
 	"address")
 var key = flag.Bool("key", false, "Import private key")
+var verbose = flag.Bool("v", false, "Print dev data")
 
 func setupFlags(msg func(), f *flag.FlagSet) {
 	f.Usage = msg
@@ -95,7 +96,7 @@ func writeNewFile(filename string, data string, perm os.FileMode) error {
 }
 
 // generateKeyPair generates and stores a secp256k1 keypair in a file.
-func generateKeyPair(generate bool) (string, error) {
+func generateKeyPair(generate bool, verbose bool) (string, error) {
 	var priv *btcec.PrivateKey
 	if generate {
 		key, err := ecdsa.GenerateKey(curve, rand.Reader)
@@ -121,8 +122,8 @@ func generateKeyPair(generate bool) (string, error) {
 
 	var buf bytes.Buffer
 
-	writeKeyData(&buf, priv, pub, false)
-	writeKeyData(&buf, priv, pub, true)
+	writeKeyData(&buf, priv, pub, false, verbose)
+	writeKeyData(&buf, priv, pub, true, verbose)
 
 	return buf.String(), nil
 }
@@ -137,7 +138,7 @@ func bytesToString(bytes []byte) (str string) {
 	return str
 }
 
-func writeKeyData(buf *bytes.Buffer, priv *btcec.PrivateKey, pub *btcec.PublicKey, compressed bool) error {
+func writeKeyData(buf *bytes.Buffer, priv *btcec.PrivateKey, pub *btcec.PublicKey, compressed bool, verbose bool) error {
 	var serializedPK []byte
 	if compressed {
 		buf.WriteString(newLine)
@@ -173,12 +174,14 @@ func writeKeyData(buf *bytes.Buffer, priv *btcec.PrivateKey, pub *btcec.PublicKe
 	buf.WriteString("Address: ")
 	buf.WriteString(addr.EncodeAddress())
 	buf.WriteString(newLine)
-	buf.WriteString("Hash:")
-	buf.WriteString(bytesToString(hash))
-	buf.WriteString(newLine)
-	buf.WriteString("Serialized PK:")
-	buf.WriteString(bytesToString(serializedPK))
-	buf.WriteString(newLine)
+	if verbose {
+		buf.WriteString("Hash:")
+		buf.WriteString(bytesToString(hash))
+		buf.WriteString(newLine)
+		buf.WriteString("Serialized PK:")
+		buf.WriteString(bytesToString(serializedPK))
+		buf.WriteString(newLine)
+	}
 
 	privWif, err := btcutil.NewWIF(priv, &params, compressed)
 	if err != nil {
@@ -505,7 +508,7 @@ func main() {
 	}
 	helpMessage := func() {
 		fmt.Println(
-			"Usage: dcraddrgen [-testnet] [-simnet] [-noseed] [-verify] [-h] filename")
+			"Usage: dcraddrgen [-testnet] [-simnet] [-noseed] [-verify] [-h] [-v] filename")
 		fmt.Println("Generate a Endurio private and public key or wallet seed. \n" +
 			"These are output to the file 'filename'.\n")
 		fmt.Println("  -h \t\tPrint this message")
@@ -514,6 +517,7 @@ func main() {
 		fmt.Println("  -seed \tGenerate a seed instead of a single keypair")
 		fmt.Println("  -verify \tVerify a seed by generating the first address")
 		fmt.Println("  -key \tImport a private key")
+		fmt.Println("  -v \tPrint dev data")
 	}
 
 	setupFlags(helpMessage, flag.CommandLine)
@@ -549,7 +553,7 @@ func main() {
 
 	// Single keypair generation.
 	if !*seed {
-		str, err := generateKeyPair(!*key)
+		str, err := generateKeyPair(!*key, *verbose)
 		if err != nil {
 			fmt.Printf("Error generating key pair: %v\n", err.Error())
 			return
