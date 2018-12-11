@@ -68,6 +68,7 @@ var verify = flag.Bool("verify", false, "Verify a seed by generating the first "
 var key = flag.Bool("key", false, "Import private key")
 var verbose = flag.Bool("v", false, "Print dev data")
 var uncompressed = flag.Bool("u", false, "Print uncompressed keys instead")
+var showPrivateKey = flag.Bool("p", false, "Print private key to console")
 
 func setupFlags(msg func(), f *flag.FlagSet) {
 	f.Usage = msg
@@ -97,7 +98,7 @@ func writeNewFile(filename string, data string, perm os.FileMode) error {
 }
 
 // generateKeyPair generates and stores a secp256k1 keypair in a file.
-func generateKeyPair(generate, verbose, uncompressed bool) (string, error) {
+func generateKeyPair(generate, verbose, uncompressed, showPrivateKey bool) (string, error) {
 	var priv *btcec.PrivateKey
 	if generate {
 		key, err := ecdsa.GenerateKey(curve, rand.Reader)
@@ -123,7 +124,7 @@ func generateKeyPair(generate, verbose, uncompressed bool) (string, error) {
 
 	var buf bytes.Buffer
 
-	writeKeyData(&buf, priv, pub, !uncompressed, verbose)
+	writeKeyData(&buf, priv, pub, !uncompressed, verbose, showPrivateKey)
 
 	return buf.String(), nil
 }
@@ -138,7 +139,7 @@ func bytesToString(bytes []byte) (str string) {
 	return str
 }
 
-func writeKeyData(buf *bytes.Buffer, priv *btcec.PrivateKey, pub *btcec.PublicKey, compressed bool, verbose bool) error {
+func writeKeyData(buf *bytes.Buffer, priv *btcec.PrivateKey, pub *btcec.PublicKey, compressed, verbose, showPrivateKey bool) error {
 	var serializedPK []byte
 	if compressed {
 		buf.WriteString(newLine)
@@ -188,9 +189,13 @@ func writeKeyData(buf *bytes.Buffer, priv *btcec.PrivateKey, pub *btcec.PublicKe
 		return err
 	}
 
-	buf.WriteString("Private key: ")
-	buf.WriteString(privWif.String())
-	buf.WriteString(newLine)
+	if showPrivateKey {
+		buf.WriteString("Private key: ")
+		buf.WriteString(privWif.String())
+		buf.WriteString(newLine)
+	} else {
+		writeNewFile(addr.EncodeAddress(), privWif.String(), 0600)
+	}
 
 	return nil
 }
@@ -519,6 +524,7 @@ func main() {
 		fmt.Println("  -key \tImport a private key")
 		fmt.Println("  -v \tPrint dev data")
 		fmt.Println("  -u \tPrint uncompressed keys instead")
+		fmt.Println("  -p \tPrint private key to console")
 	}
 
 	setupFlags(helpMessage, flag.CommandLine)
@@ -554,7 +560,7 @@ func main() {
 
 	// Single keypair generation.
 	if !*seed {
-		str, err := generateKeyPair(!*key, *verbose, *uncompressed)
+		str, err := generateKeyPair(!*key, *verbose, *uncompressed, *showPrivateKey)
 		if err != nil {
 			fmt.Printf("Error generating key pair: %v\n", err.Error())
 			return
