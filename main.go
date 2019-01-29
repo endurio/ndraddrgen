@@ -16,12 +16,12 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainec"
-	"github.com/decred/dcrd/dcrec/secp256k1"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/hdkeychain"
-	"github.com/decred/dcrwallet/walletseed"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/chaincfg/chainec"
+	"github.com/endurio/ndrd/dcrec/secp256k1"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/hdkeychain"
+	"github.com/endurio/ndrw/walletseed"
 )
 
 // The hierarchy described by BIP0043 is:
